@@ -1,232 +1,297 @@
+# Noted <!-- omit in toc -->
 
-
-# noted
-
-_Lightweight CLI for taking markdown notes in a journal-like (time-seried) fashion on macOS._
-
-## Contents
-
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+Reimplementation of [scottashipp's "noted"](https://github.com/scottashipp/noted) using Rust.
 
 - [Features](#features)
 - [Getting Started](#getting-started)
-  - [Required steps](#required-steps)
-  - [Optional steps](#optional-steps)
-- [Typical usage](#typical-usage)
-- [Subcommand reference](#subcommand-reference)
-- [Configuration guide](#configuration-guide)
-  - [Default values](#default-values)
-  - [Configuring custom values](#configuring-custom-values)
-  - [Custom template file](#custom-template-file)
-- [Recommended aliases](#recommended-aliases)
-- [Usage with a static site generator](#usage-with-a-static-site-generator)
-- [Change default editor](#change-default-editor)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+- [Usage](#usage)
+    - [Other Commands](#other-commands)
+        - [Option "-o"](#option--o)
+        - [New](#new)
+        - [Open](#open)
+        - [Find](#find)
+        - [Config](#config)
+        - [Version](#version)
+- [Configuration](#configuration)
+    - [NOTE_DIRECTORY](#note_directory)
+    - [DATE_FORMAT](#date_format)
+    - [USE_REPOSITORY_SPECIFIC](#use_repository_specific)
+    - [FILE_ROLLING](#file_rolling)
+    - [NOTE_TEMPLATE_FILE](#note_template_file)
 
 ## Features
 
-_Noted_ can do the following and more:
-
-- Automatically create a markdown file for you, named with today's date (in a customizable date format)
-- Append note entries from the command line automatically, formatted with a Markdown template you can customize
-- Timestamp all entries with a customizable timestamp format
-- Quickly open the notes from any given date for you to view or edit
-- Work with any text editor, with no interference between `noted` and the editor
+- Create markdown file with notes
+- Easy CLI usage
+- Timestamp for notes
+- Tags for notes
 
 ## Getting Started
 
-### Required steps
+Place `noted.exe` in directory which can be discovered using your `%PATH%` variable.
 
-Getting started with _Noted_ only requires that `noted` is placed on your path.
+## Usage
 
-A good standard way to do this is to symlink the `noted` script to `/usr/local/bin` as follows.
+Take a note with the content 'my note':
 
-1. Open a terminal.
-2. Change to your `Documents` directory.
-
-```shell
-cd $HOME/Documents
+```pwsh
+noted "my note"
 ```
 
-3. Clone this repository to your Documents folder.
+Creates a note that looks like this:
 
-```shell
-git clone git@github.com:scottashipp/noted.git -C $HOME/Documents
+```markdown
+2021-11-11 11:07:49
+
+my note
+
+
+---
 ```
 
-4. Symlink the file:
-
-```shell
-ln -s $HOME/Documents/noted/noted /usr/local/bin/noted
+Take another note with the content 'second note':
+```pwsh
+noted "my note"
 ```
 
-6. Verify that it is visible on the path:
+Appends the note to todays file:
+```markdown
+2021-11-11 11:07:49
 
-```shell
+my note
+
+
+
+---
+
+2021-11-11 11:08:49
+
+second note
+
+
+
+---
+```
+
+Take note with the content 'second note' and tags:
+```pwsh
+noted "my note with a tag" my-tag
+```
+
+Appends the note to todays file:
+```markdown
+2021-11-11 11:07:49
+
+my note
+
+
+
+---
+
+2021-11-11 11:08:49
+
+second note
+
+
+
+---
+
+2021-11-11 11:09:49
+
+my note with a tag
+
+#my-tag
+
+---
+```
+
+### Other Commands
+
+#### Option "-o"
+
+Append the option `-o` to the noted command to open the notes file after writing the note.
+
+Example:
+```pwsh
+noted "my note" -o
+```
+Writes the note `my note` and opens the note file in your default editor.
+
+#### New
+
+Creates a new note file with the provided file name in the configured [`NOTE_DIRECTORY`](#note_directory) and opens it in your default editor:
+```pwsh
+noted new <note file name>
+
+noted n <note file name>
+```
+
+Example:
+```pwsh
+noted new noted-todos
+```
+Will create a file called `noted-todos.md` and open it in your default editor.
+
+Alternative:
+```pwsh
+noted create <note file name>
+```
+
+**Limitation:** Ignores `USE_REPOSITORY_SPECIFIC` setting!
+
+#### Open
+
+Open notes in your default editor:
+```pwsh
+noted open
+
+noted o
+```
+
+Open specific notes file in your default editor<sup>*</sup>:
+```pwsh
+noted open <filename>
+
+noted o <filename>
+```
+
+Example 1:
+```pwsh
+noted open
+```
+Will open current note file in your default editor.
+
+Example 2:
+```pwsh
+noted open 2021-03-12
+```
+Will try to open the file `2021-03-12.md` in your default editor<sup>*,**</sup>.
+
+Alternatives:
+```pwsh
+noted view
+
+noted edit
+```
+
+<sup>* The first file that matches the filename will be opened.</sup>
+
+<sup>** Supports wildcards.</sup>
+
+#### Find
+
+Todo: Not supprted yet!
+
+Find a note containing the provided text:
+```pwsh
+noted find [<options>] <pattern> [<file filter>]
+
+noted f [<options>] <pattern> [<file filter>]
+```
+
+Example:
+```pwsh
+noted find "*later*"
+
+noted f "*later*"
+```
+
+Options:
+- `tag`: search for tags
+
+Alternatives:
+```pwsh
+noted grep [<options>] <pattern> [<file filter>]
+
+noted search [<options>] <pattern> [<file filter>]
+```
+
+todo: second argument "-t"/"tag" or "-d"/"date"
+
+#### Config
+
+Open configuration file:
+
+```pwsh
+noted config
+```
+
+More information about configuration in section [Configuration](#configuration).
+
+#### Version
+
+Show the current version:
+
+```pwsh
 noted version
 ```
 
-If the above outputs `noted v0.0.1` then all is well. Check out the [Typical usage](#typical-usage) section below to take your first notes!
+## Configuration
 
-### Optional steps
+The configuration file can be found inside the Platform Specific config folder. See table below:
 
-You may want to follow the [configuration guide](#configuration-guide) if you do not like the defaults.
+Platform | Value
+-- | --
+Linux | $HOME/.config/noted
+macOS | $HOME/Library/Application Support/noted
+Windows | %APPDATA%\noted
 
-## Typical usage
+### NOTE_DIRECTORY
 
-You're a developer. It's 8am and you start work on a new project. From your terminal, you type:
+Default storage for notes. This can be one static path for ex. `$HOME/notes` or depending on the configuration [USE_REPOSITORY_SPECIFIC](#use_repository_specific] will be the repository folder.
 
-```shell
-noted 'Begin creating Foo'
+### DATE_FORMAT
+
+Dete format for the note timestamp. Supported date and time formats can be [looked up here](https://docs.rs/chrono/0.4.0/chrono/format/strftime/index.html).
+
+### USE_REPOSITORY_SPECIFIC
+
+If you enable this, the notes will be placed into the repository where noted was invoked.
+
+**Example:**
+
+`USE_REPOSITORY_SPECIFIC=true` is configured.
+
+```powershell
+/sources/my_repository $ noted "sample"
 ```
 
-A new Markdown file is automatically created with today's date in your configured directory.
+Will create a note file inside the repository `my_repository`.
 
-> Note: The default directory is $HOME/Documents/noted. It will be created for you if it doesn't exist.
-
-Second, `noted` also creates the following _automatic entry:_
-
-```markdown
----
-8:00:44 UTC
-
-# Begin creating Foo
-
----
+```powershell
+/home $ noted "sample"
 ```
 
-At 9am, you have a meeting with the Foo team. You type `noted` in your terminal to start a new note. Your default editor opens to today's file, the template is
-automatically appended to the end, and it is timestamped for you. You use this entry to take notes during your meeting, which include links, images, and code.
+Will create a note file inside the directory configured in `NOTE_DIRECTORY`.
 
-Later, you start work again, and note this:
+### FILE_ROLLING
 
-```shell
-noted 'Working on foo again.'
-```
+This setting changes the file rolling behaviour. Supported values are:
+- `Daily` (Default) - Creates a new file for each day. The file format is fixed to `YEAR-MONTH-DAY.md`.
+- `Week` - Creates a new file for every week. The file format is fixed to `YEAR-WEEKNUMBER.md`.
+- `Month` - Creates a new file every month. The file format is fixed to `YEAR-MONTH.md`.
+- `Year` - Creates a new file every year. The file format is fixed to `YEAR.md`.
+- `Never` - All notes are placed in one single file. The file is named `notes.md`.
 
-You're trying to remember what your team talked about in last week's meeting, so you view the notes for that day:
+### NOTE_TEMPLATE_FILE
 
-```shell
-noted view 2021-09-27
-```
+Path to the note template. By default the template file is located in the same directory as the noted config.
 
-This opens the file from that date with your default editor.
+You can add a custom template and configure it here.
 
-After a bit, you open a pull request for Foo. You type:
+Supported keywords for the template:
+- `%date_format%` - Timestamp of the note as configured in [DATE_FORMAT](#date_format).
+- `%note%` - The note.
+- `%tags%` - Tags for the note.
 
-```shell
-noted
-```
+**Note:** At the end of each note the delimiter `---` is added. No need ot put it in the template.
 
-This automatically opens today's file in your default editor, and appends a new entry using the template. In the resulting new entry, you record the link to the
-PR.
+**Default Template:**
 
-The rest of the day goes similarly. At the end of the day, you check in your notes to Git.
+```md
+%date_format%
 
-Your notes page, when viewed as HTML looks [just like this](example-notes-page.md):
+%note%
 
-![](example-notes-page.jpeg)
-
-You now have a source-controlled, time-seried journal of events. Most importantly, these notes look great and include links, snippets of code, and images.
-
-## Subcommand reference
-
-_Noted_ works like many other CLI's, through the use of subcommands. It currently supports config, create, edit, version, and view. These are fully-specified in
-the [subcommand reference](subcommands.md)
-
-## Configuration guide
-
-### Default values
-
-The following default values are configured.
-
-| Property | Description | Default Value |
-| :-- | :-- | :-- |
-| NOTED_MARKDOWN_HOME | The place where markdown files are automatically generated. | `$HOME/Documents/noted` |
-| NOTED_FILE_NAME_DATE_FORMAT | The date format string used as the file name for new notes. | `"+%Y-%m-%d"` | 
-| NOTED_TIMESTAMP_FORMAT | The timestamp format for the timestamp placed on new entries. | `"+%H:%M:%S UTC"` |
-| NOTED_TEMPLATE_FILE | A file containing a Markdown-formatted entry template to use. | `""` <br /> (It is empty by default. Which means the script's own default template will be used.) |
-
-### Configuring custom values
-
-To configure custom values, you may place a `.notedconfig` file in your `$HOME` directory.
-
-For example, saving the following contents into `$HOME/.notedconfig` will alter the behavior of `noted` accordingly:
-
-```text
-# Save my notes here instead
-NOTED_MARKDOWN_HOME=$HOME/Documents/mynotes
-# Use month-date-year instead of year-month-date as the file names
-NOTED_FILE_NAME_DATE_FORMAT="+%m-%d-%Y"
-# Use Pacific time
-NOTED_TIMESTAMP_FORMAT="+%H:%M:%S Pacific"
-# Use my own template file
-NOTED_TEMPLATE_FILE=$HOME/Documents/mynotes/template.md
-```
-
-Both the `NOTED_FILE_NAME_DATE_FORMAT` and the `NOTED_TIMESTAMP_FORMAT` are format strings as specified by the `date` shell command. You can learn more about
-this format by reading the man page for `date`.
-
-### Custom template file
-
-_Noted_ templates only support the variables `TIMESTAMP` and `HEADERTEXT`.
-
-`TIMESTAMP` is replaced with the output of `date` as formatted by `NOTED_TIMESTAMP_FORMAT`.
-
-'HEADERTEXT' is the value of any argument passed to `noted` when quick-creating a note. Place it in your template so that this value is output.
-
-By default, `noted` uses the following template:
-
-```markdown
----
-TIMESTAMP
-
-# HEADERTEXT
-
----
-```
-
-Another valid custom template might be:
-
-```markdown
-# HEADERTEXT
-
-<small>_TIMESTAMP_</small>
-
-
-```
-
-## Recommended aliases
-
-Besides supplying a custom configuration, you probably want to add the following aliases to make using `noted` even easier:
-
-| Alias | Description |
-| :-- | :-- |
-| n | Alias for `noted` itself. |
-| ne | Alias for `noted edit`. |
-| nv | Alias for `noted version`. |
-| nc | Alias for `noted config`. |
-
-## Usage with a static site generator
-
-Some people may prefer to use `noted` with a static site generator like [mkdocs](https://www.mkdocs.org)
-, [Maven site](https://maven.apache.org/plugins/maven-site-plugin/), or [Hugo](https://gohugo.io/). Those are just a few examples. Doing so will allow you to
-view your notes in HTML format locally.
-
-## Change default editor
-`noted` used `open` command to edit a markdown file. Usually `open` command is an alias and can be changed using the following commands.
-
-
-Add a new alternative to `open` command:
-
-```
-sudo update-alternatives --install /usr/bin/open open <path> <priority>
-```
-
-Choose the new alternative
-
-```
-sudo update-alternatives --config open
+%tags%
 ```
