@@ -17,3 +17,6 @@ Cargo.lock
 cobertura.xml
 lcov.info
 tarpaulin-report.html
+
+out/
+release/

@@ -13,3 +13,6 @@ RUN rustup target add x86_64-pc-windows-gnu
 RUN cargo install cargo-tarpaulin
 
 RUN chown -R vscode /usr/local/cargo
+
+RUN mkdir -p /workspaces/target
+RUN chown -R vscode /workspaces/target
