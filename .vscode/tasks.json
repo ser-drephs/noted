@@ -22,7 +22,8 @@
             "args": [
                 "tarpaulin",
                 "--out",
-                "Html"
+                "Html",
+                "--ignore-tests"
             ],
             "problemMatcher": [
                 "$rustc"

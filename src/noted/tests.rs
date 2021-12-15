@@ -1,54 +1,27 @@
-#[macro_export]
-macro_rules! in_temp_dir {
-    ($block:block) => {
-        let temp_dir = temp_dir::TempDir::new().unwrap();
-        std::env::set_current_dir(&temp_dir.path()).unwrap();
-
-        $block;
-    };
-}
-
 #[cfg(test)]
 mod file_rolling_tests {
     use std::str::FromStr;
 
     use crate::noted::FileRolling;
 
-    #[test]
-    fn parse_daily() {
-        let file_rolling = FileRolling::from_str("Daily").unwrap();
-        assert_eq!(FileRolling::Daily, file_rolling);
+    macro_rules! test_parse {
+        ($name:ident, $($a:expr, $e:expr),+) => {
+            #[test]
+            fn $name() {
+                $({
+                    let file_rolling = FileRolling::from_str($a).unwrap();
+                    assert_eq!($e, file_rolling);
+                })*
+            }
+        };
     }
 
-    #[test]
-    fn parse_week() {
-        let file_rolling = FileRolling::from_str("Week").unwrap();
-        assert_eq!(FileRolling::Week, file_rolling);
-    }
-
-    #[test]
-    fn parse_month() {
-        let file_rolling = FileRolling::from_str("Month").unwrap();
-        assert_eq!(FileRolling::Month, file_rolling);
-    }
-
-    #[test]
-    fn parse_year() {
-        let file_rolling = FileRolling::from_str("Year").unwrap();
-        assert_eq!(FileRolling::Year, file_rolling);
-    }
-
-    #[test]
-    fn parse_never() {
-        let file_rolling = FileRolling::from_str("Never").unwrap();
-        assert_eq!(FileRolling::Never, file_rolling);
-    }
-
-    #[test]
-    fn parse_case_insensitive() {
-        let file_rolling = FileRolling::from_str("week").unwrap();
-        assert_eq!(FileRolling::Week, file_rolling);
-    }
+    test_parse!(daily, "Daily", FileRolling::Daily);
+    test_parse!(week, "Week", FileRolling::Week);
+    test_parse!(month, "Month", FileRolling::Month);
+    test_parse!(year, "Year", FileRolling::Year);
+    test_parse!(never, "Never", FileRolling::Never);
+    test_parse!(case_insensitive, "week", FileRolling::Week);
 
     #[test]
     fn parse_error_test() {
@@ -58,202 +31,6 @@ mod file_rolling_tests {
             "unable to parse file rolling from 'Abc'",
             file_rolling.unwrap_err().to_string()
         );
-    }
-}
-
-#[cfg(test)]
-mod command_tests {
-    use std::str::FromStr;
-
-    use crate::noted::Command;
-
-    #[test]
-    fn parse_default() {
-        assert_eq!(Command::Direct, Command::from_str("sample").unwrap());
-    }
-
-    #[test]
-    fn parse_create() {
-        assert_eq!(Command::Create, Command::from_str("create").unwrap());
-        assert_eq!(Command::Create, Command::from_str("new").unwrap());
-        assert_eq!(Command::Create, Command::from_str("n").unwrap());
-    }
-
-    #[test]
-    fn parse_config() {
-        assert_eq!(Command::Config, Command::from_str("config").unwrap());
-    }
-
-    #[test]
-    fn parse_open() {
-        assert_eq!(Command::Open, Command::from_str("edit").unwrap());
-        assert_eq!(Command::Open, Command::from_str("view").unwrap());
-        assert_eq!(Command::Open, Command::from_str("open").unwrap());
-        assert_eq!(Command::Open, Command::from_str("o").unwrap());
-    }
-
-    #[test]
-    fn parse_find() {
-        assert_eq!(Command::Grep, Command::from_str("grep").unwrap());
-        assert_eq!(Command::Grep, Command::from_str("search").unwrap());
-        assert_eq!(Command::Grep, Command::from_str("find").unwrap());
-        assert_eq!(Command::Grep, Command::from_str("f").unwrap());
-    }
-
-    #[test]
-    fn parse_version() {
-        assert_eq!(Command::Version, Command::from_str("version").unwrap());
-        assert_eq!(Command::Version, Command::from_str("v").unwrap());
-    }
-
-    #[test]
-    fn parse_help() {
-        assert_eq!(Command::Help, Command::from_str("help").unwrap());
-        assert_eq!(Command::Help, Command::from_str("?").unwrap());
-    }
-}
-
-#[cfg(test)]
-mod note_tests {
-    use crate::noted::{Note, LINE_ENDING};
-    use crate::{str, vec_of_strings};
-    use indoc::indoc;
-
-    #[test]
-    fn parse_empty_vec_should_be_default() {
-        let args: Vec<String> = Vec::new();
-        let note = Note::from(&args);
-        assert_eq!(note.content, str!(""));
-        assert!(note.tags.is_none());
-        assert_eq!(
-            format!("%date_format%{0}{0}%note%{0}{0}%tags%", LINE_ENDING),
-            note.template.template
-        );
-        assert_eq!("%F %T", note.template.date_format);
-    }
-
-    #[test]
-    fn parse_one_argument_should_create_note_without_tags() {
-        let args = vec_of_strings!("Sample note");
-        let note = Note::from(&args);
-        assert_eq!(str!("Sample note"), note.content);
-        assert!(note.tags.is_none());
-    }
-
-    #[test]
-    fn parse_two_arguments_should_create_note_with_tag() {
-        let args = vec_of_strings!("Sample note", "tag1");
-        let note = Note::from(&args);
-        assert_eq!(note.content, str!("Sample note"));
-        if let Some(tags) = &note.tags {
-            assert_eq!(1, tags.len());
-            assert_eq!("tag1", tags[0]);
-        }
-    }
-
-    #[test]
-    fn parse_multiple_arguments_should_create_note_with_multiple_tags() {
-        let args = vec_of_strings!("Sample note", "tag1", "tag2", "tag3", "tag4");
-        let note = Note::from(&args);
-        assert_eq!(str!("Sample note"), note.content);
-        assert_eq!(4, note.tags.unwrap().len());
-    }
-
-    #[test]
-    fn to_string_uses_default_template() {
-        let args = vec_of_strings!("Sample note", "tag1", "tag2");
-        let note = Note::from(&args);
-        let expected = indoc! {"
-            Sample note
-
-            #tag1;#tag2
-
-            ---
-            "
-        };
-        assert!(note.to_string().contains(expected));
-    }
-
-    #[test]
-    fn to_string_uses_template() {
-        let args = vec_of_strings!("Sample note", "tag1", "tag2");
-        let mut note = Note::from(&args);
-        note.template.template = str!(indoc! {
-            "%tags%
-
-            %note%"
-        });
-        let expected = indoc! {"
-            #tag1;#tag2
-
-            Sample note
-
-            ---
-            "
-        };
-        assert_eq!(expected, note.to_string());
-    }
-
-    #[test]
-    fn to_string_uses_date_format() {
-        let args = vec_of_strings!("Sample note", "tag1", "tag2");
-        let now = chrono::Local::now();
-        let year = &now.format("%Y").to_string();
-        let mut note = Note::from(&args);
-        note.template.date_format = str!("%Y");
-        let expected = format!(
-            indoc! {"
-            {0}
-
-            Sample note
-
-            #tag1;#tag2
-
-            ---
-            "
-            },
-            year
-        );
-        assert_eq!(expected, note.to_string());
-    }
-
-    #[test]
-    fn to_string_trims_start_template() {
-        let args = vec_of_strings!("Sample note");
-        let mut note = Note::from(&args);
-        note.template.template = str!(indoc! {
-            "%tags%
-
-            %note%"
-        });
-        let expected = indoc! {"
-            Sample note
-
-            ---
-            "
-        };
-        assert_eq!(expected, note.to_string());
-    }
-
-    #[test]
-    fn to_string_trims_end_template() {
-        let args = vec_of_strings!("Sample note");
-        let now = chrono::Local::now();
-        let year = &now.format("%Y").to_string();
-        let mut note = Note::from(&args);
-        note.template.date_format = str!("%Y");
-        let expected = format!(
-            indoc! {"
-            {0}
-
-            Sample note
-
-            ---
-            "
-            },
-            year
-        );
-        assert_eq!(expected, note.to_string());
     }
 }
 
@@ -356,517 +133,14 @@ mod configuration_tests {
 }
 
 #[cfg(test)]
-mod markdown_search_arguments_tests {
-    use crate::{
-        noted::{MarkdownSearchArguments, MarkdownSearchType},
-        vec_of_strings,
-    };
-
-    #[test]
-    fn parse_no_arguments() {
-        let search = MarkdownSearchArguments::from([].to_vec());
-        assert_eq!("", search.regex);
-        assert_eq!(MarkdownSearchType::Default, search.search_type);
-        assert!(search.file_regex.is_none());
-    }
-
-    #[test]
-    fn parse_empty_arguments() {
-        let args = vec_of_strings!("");
-        let search = MarkdownSearchArguments::from(args);
-        assert_eq!("", search.regex);
-        assert_eq!(MarkdownSearchType::Default, search.search_type);
-        assert!(search.file_regex.is_none());
-    }
-
-    #[test]
-    fn parse_regex() {
-        let args = vec_of_strings!("\\d");
-        let search = MarkdownSearchArguments::from(args);
-        assert_eq!("\\d", search.regex);
-        assert_eq!(MarkdownSearchType::Default, search.search_type);
-        assert!(search.file_regex.is_none());
-    }
-
-    #[test]
-    fn parse_regex_and_file_regex() {
-        let args = vec_of_strings!("\\d", "2021-03");
-        let search = MarkdownSearchArguments::from(args);
-        assert_eq!("\\d", search.regex);
-        assert_eq!(MarkdownSearchType::Default, search.search_type);
-        assert!(search.file_regex.is_some());
-        assert_eq!("2021-03", search.file_regex.unwrap());
-    }
-
-    #[test]
-    fn parse_search_type_tags_and_regex() {
-        let args = vec_of_strings!("t", "\\d");
-        let search = MarkdownSearchArguments::from(args);
-        assert_eq!("\\d", search.regex);
-        assert_eq!(MarkdownSearchType::Tags, search.search_type);
-        assert!(search.file_regex.is_none());
-    }
-
-    #[test]
-    fn parse_search_type_tags_without_regex() {
-        let args = vec_of_strings!("t");
-        let search = MarkdownSearchArguments::from(args);
-        assert_eq!("", search.regex);
-        assert_eq!(MarkdownSearchType::Tags, search.search_type);
-        assert!(search.file_regex.is_none());
-    }
-}
-
-#[cfg(test)]
-mod markdown_search_type_tests {
-    use std::str::FromStr;
-
-    use crate::noted::MarkdownSearchType;
-
-    #[test]
-    fn parse_tag() {
-        assert_eq!(
-            MarkdownSearchType::Tags,
-            MarkdownSearchType::from_str("tag").unwrap()
-        );
-        assert_eq!(
-            MarkdownSearchType::Tags,
-            MarkdownSearchType::from_str("tags").unwrap()
-        );
-        assert_eq!(
-            MarkdownSearchType::Tags,
-            MarkdownSearchType::from_str("t").unwrap()
-        );
-    }
-
-    #[test]
-    fn parse_default() {
-        assert_eq!(
-            MarkdownSearchType::Default,
-            MarkdownSearchType::from_str("other").unwrap()
-        );
-        assert_eq!(
-            MarkdownSearchType::Default,
-            MarkdownSearchType::from_str("l").unwrap()
-        );
-    }
-}
-
-#[cfg(test)]
-mod markdown_search_result_tests {
-    use crate::noted::MarkdownSearchResult;
-    use crate::str;
-
-    #[test]
-    fn format_short_filename_no_dots() {
-        let data: Vec<(String, u64, String)> =
-            vec![(str!("/temp/long/filename.md"), 1, str!("test"))];
-        // let expected = MarkdownSearchResult::fmt("/temp/long/filename.md", "1", "test");
-        let expected = "/temp/long/filename.md         | 1    | test                                         ";
-
-        //ACT
-        let table = MarkdownSearchResult::to_table(data);
-        //ASSERT
-        assert!(!table[1].starts_with("..."));
-        assert_eq!(expected, table[1]);
-    }
-
-    #[test]
-    fn format_long_filename_with_dots() {
-        let data: Vec<(String, u64, String)> =
-            vec![(str!("/temp/long/and/longer/or/evenlonger/filename.md"), 1, str!("test"))];
-        // let expected = MarkdownSearchResult::fmt("...r/or/evenlonger/filename.md", "1", "test");
-        let expected = "...r/or/evenlonger/filename.md | 1    | test                                         ";
-
-        //ACT
-        let table = MarkdownSearchResult::to_table(data);
-        //ASSERT
-        assert!(table[1].starts_with("..."));
-        assert_eq!(expected, table[1]);
-    }
-
-    #[test]
-    fn format_line_number_four_digits() {
-        let data: Vec<(String, u64, String)> =
-            vec![(str!("/temp/long/and/longer/or/evenlonger/filename.md"), 9999, str!("test"))];
-        // let expected = MarkdownSearchResult::fmt("...r/or/evenlonger/filename.md", "9999", "test");
-        let expected = "...r/or/evenlonger/filename.md | 9999 | test                                         ";
-        //ACT
-        let table = MarkdownSearchResult::to_table(data);
-        //ASSERT
-        assert!(table[1].starts_with("..."));
-        assert_eq!(expected, table[1]);
-    }
-
-    #[test]
-    fn format_line_number_five_digits() {
-        let data: Vec<(String, u64, String)> =
-            vec![(str!("/temp/long/and/longer/or/evenlonger/filename.md"), 99999, str!("test"))];
-        // let expected = MarkdownSearchResult::fmt("...r/or/evenlonger/filename.md", "99999", "test");
-        let expected = "...r/or/evenlonger/filename.md | 99999 | test                                         ";
-        //ACT
-        let table = MarkdownSearchResult::to_table(data);
-        //ASSERT
-        assert!(table[1].starts_with("..."));
-        assert_eq!(expected, table[1]);
-    }
-
-    #[test]
-    fn format_long_line() {
-        let data: Vec<(String, u64, String)> =
-            vec![(str!("/temp/long/and/longer/or/evenlonger/filename.md"), 9999, str!("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."))];
-        // let expected = MarkdownSearchResult::fmt("...r/or/evenlonger/filename.md", "99999", "test");
-        let expected = "...r/or/evenlonger/filename.md | 9999 | Lorem Ipsum is simply dummy text of the pr...";
-        //ACT
-        let table = MarkdownSearchResult::to_table(data);
-        //ASSERT
-        assert!(table[1].starts_with("..."));
-        assert_eq!(expected, table[1]);
-    }
-
-}
-
-#[cfg(test)]
 mod markdown_tests {
 
-    mod write_tests {
-        use crate::noted::{Configuration, Markdown, Note, PostCommand, NOTES_FILE_NAME};
-        use crate::{str, vec_of_strings};
-        use indoc::indoc;
-
-        #[test]
-        #[serial_test::serial]
-        fn custom_filename() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file = Markdown::custom_target(&[str!("sample")], &configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(_) => {
-                        let expected = cur_dir.join("sample.md");
-                        assert!(expected.exists());
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn daily_rolling() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file = Markdown::target(&configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(_) => {
-                        let now = chrono::Local::now();
-                        let file_name = format!("{}.md", &now.format("%Y-%m-%d"));
-                        let expected = cur_dir.join(file_name);
-                        assert!(expected.exists());
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn month_rolling() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Month,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file = Markdown::target(&configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(_) => {
-                        let now = chrono::Local::now();
-                        let file_name = format!("{}.md", &now.format("%Y-%m"));
-                        let expected = cur_dir.join(file_name);
-                        assert!(expected.exists());
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn week_rolling() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Week,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file = Markdown::target(&configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(_) => {
-                        let now = chrono::Local::now();
-                        let file_name = format!("{}.md", &now.format("%Y-%W"));
-                        let expected = cur_dir.join(file_name);
-                        assert!(expected.exists());
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn year_rolling() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Year,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file = Markdown::target(&configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(_) => {
-                        let now = chrono::Local::now();
-                        let file_name = format!("{}.md", &now.format("%Y"));
-                        let expected = cur_dir.join(file_name);
-                        assert!(expected.exists());
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn note_strucutre() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let note_template = str!(indoc! {
-                    "%note%
-
-                    %tags%"
-                });
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Year,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let file = Markdown::target(&configuration);
-
-                let mut note = Note::from(&vec_of_strings!("sample note"));
-                note.template.template = note_template.clone();
-                Markdown::write(&note, &file).unwrap();
-
-                let mut note2 = Note::from(&vec_of_strings!("sample note 2", "tag"));
-                note2.template.template = note_template.clone();
-                Markdown::write(&note2, &file).unwrap();
-
-                let mut note3 = Note::from(&vec_of_strings!("sample note 3"));
-                note3.template.template = note_template;
-                Markdown::write(&note3, &file).unwrap();
-
-                let expected_note_content = vec_of_strings!(
-                    "sample note",
-                    "",
-                    "---",
-                    "sample note 2",
-                    "",
-                    "#tag",
-                    "",
-                    "---",
-                    "sample note 3",
-                    "",
-                    "---",
-                    ""
-                );
-
-                let read_note_file = std::fs::File::open(file).unwrap();
-                let raw_note: Vec<String> =
-                    std::io::BufRead::lines(std::io::BufReader::new(read_note_file))
-                        .map(|l| l.unwrap())
-                        .collect();
-
-                for i in 0..raw_note.len() - 1 {
-                    assert_eq!(expected_note_content[i], raw_note[i]);
-                }
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn mixed_rolling() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                // Write Daily note.
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file1 = Markdown::target(&configuration);
-
-                Markdown::write(&note, &file1).unwrap();
-
-                // Change to week and write note
-                let configuration2 = Configuration {
-                    file_rolling: crate::noted::FileRolling::Week,
-                    ..configuration
-                };
-                let file2 = Markdown::target(&configuration2);
-
-                Markdown::write(&note, &file2).unwrap();
-
-                // Change to never and write note
-                let configuration3 = Configuration {
-                    file_rolling: crate::noted::FileRolling::Never,
-                    ..configuration2
-                };
-                let file3 = Markdown::target(&configuration3);
-
-                Markdown::write(&note, &file3).unwrap();
-
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 3);
-
-                let expected = cur_dir.join(NOTES_FILE_NAME);
-                assert!(expected.exists());
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn write_and_open() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note", "tag", "-o"));
-                if let Some(tags) = &note.tags {
-                    assert_eq!(1, tags.len());
-                }
-                let file = Markdown::target(&configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(res) => {
-                        let now = chrono::Local::now();
-                        let file_name = format!("{}.md", &now.format("%Y-%m-%d"));
-                        let expected = cur_dir.join(file_name);
-                        assert!(expected.exists());
-                        assert_eq!(PostCommand::Open, res);
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn write_and_do_nothing() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note", "tag"));
-                let file = Markdown::target(&configuration);
-
-                match Markdown::write(&note, &file) {
-                    Ok(res) => {
-                        let now = chrono::Local::now();
-                        let file_name = format!("{}.md", &now.format("%Y-%m-%d"));
-                        let expected = cur_dir.join(file_name);
-                        assert!(expected.exists());
-                        assert_eq!(PostCommand::None, res);
-                    }
-                    Err(_) => panic!("write note month failed"),
-                };
-                Markdown::write(&note, &file).unwrap();
-                let options = glob::MatchOptions {
-                    case_sensitive: false,
-                    ..Default::default()
-                };
-                assert!(glob::glob_with("*", options).unwrap().count() == 1);
-            });
-        }
-    }
-
     mod search_tests {
-        use crate::{
-            noted::{
-                Configuration, FileRolling, Markdown, MarkdownSearchArguments,
-                MarkdownSearchResult, Note,
-            },
-            str, vec_of_strings,
-        };
+        use crate::noted::{SearchArguments, Configuration, Markdown};
 
         #[test]
         fn empty_search_arguments_invalidinput_error() {
-            let search = MarkdownSearchArguments::from(vec_of_strings!("t"));
+            let search = SearchArguments::default();
             let configuration = Configuration::default();
             match Markdown::search(search, &configuration) {
                 Ok(_) => panic!("should not be ok"),
@@ -878,7 +152,11 @@ mod markdown_tests {
 
         #[test]
         fn files_by_pattern_not_found_error() {
-            let search = MarkdownSearchArguments::from(vec_of_strings!("t", "bug", "_\\"));
+            let search = SearchArguments {
+                regex: "For Unit Test Only Will Not Be Found".to_string(),
+                file_regex: Some("__\\".to_string()),
+                ..Default::default()
+            }; //::from(vec_of_strings!("bug", "_\\"));
             let configuration = Configuration::default();
             match Markdown::search(search, &configuration) {
                 Ok(_) => panic!("should not be ok"),
@@ -887,243 +165,168 @@ mod markdown_tests {
                 }
             }
         }
+    }
+}
 
-        // test mit fallback auf configuration
+#[cfg(test)]
+mod note_tests {
+    use crate::noted::Note;
+    use crate::vec_of_strings;
 
-        // test mit einzelner datei gefunden
-        #[test]
-        #[serial_test::serial]
-        fn find_single_occurence_in_one_file() {
-            in_temp_dir!({
-                // ARRANGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    note_directory: str!(cur_dir, PathBuf),
-                    file_rolling: FileRolling::Never,
-                    ..Default::default()
-                };
-                let note = Note::from(&vec_of_strings!("sample note"));
-                let file = Markdown::target(&configuration);
-                Markdown::write(&note, &file).unwrap();
-                //ACT
-                let search_arguments = MarkdownSearchArguments {
-                    regex: str!(".*note"),
-                    ..Default::default()
-                };
-                let result = Markdown::search(search_arguments, &configuration);
-                assert!(result.is_ok());
-                MarkdownSearchResult::to_table(result.unwrap());
-            });
-        }
-
-        // test mit mehreren dateien gefunden
+    macro_rules! test_note {
+        ($name:ident, $($a:expr, $e:expr),+) => {
+            #[test]
+            fn $name() {
+                $({
+                    let note = Note::from($a);
+                    assert_eq!($e, note);
+                })*
+            }
+        };
     }
 
-    mod taget_by_pattern_tests {
-        use crate::noted::{Configuration, Markdown};
-        use crate::{str, vec_of_strings};
+    test_note!(
+        from_empty_vec_should_be_default,
+        Vec::new(),
+        Note::default()
+    );
+
+    test_note!(
+        from_one_argument_should_create_note_without_tags,
+        ["Sample note"].to_vec(),
+        Note {
+            content: "Sample note".to_string(),
+            ..Default::default()
+        }
+    );
+
+    test_note!(
+        from_two_arguments_should_create_note_with_tag,
+        ["Sample note", "tag1"].to_vec(),
+        Note {
+            content: "Sample note".to_string(),
+            tags: vec_of_strings!("tag1")
+        }
+    );
+
+    test_note!(
+        from_multiple_arguments_should_create_note_with_multiple_tags,
+        ["Sample note", "tag1", "tag2", "tag3", "tag4"].to_vec(),
+        Note {
+            content: "Sample note".to_string(),
+            tags: vec_of_strings!("tag1", "tag2", "tag3", "tag4")
+        }
+    );
+}
+
+#[cfg(test)]
+mod search_result_tests {
+    use crate::noted::SearchResult;
+    use crate::str;
+
+    macro_rules! test_format {
+        ($name:ident, $($a:expr, $e:expr),+) => {
+            #[test]
+            fn $name() {
+                $({
+                let table = SearchResult::to_table($a);
+                assert_eq!($e, table[1]);
+                })*
+            }
+        };
+    }
+
+    test_format!(
+        format_short_filename_no_dots,
+        vec![(str!("/temp/long/filename.md"), 1, str!("test"))],
+        "/temp/long/filename.md         | 1    | test"
+    );
+
+    test_format!(
+        format_long_filename_with_dots,
+        vec![(
+            str!("/temp/long/and/longer/or/evenlonger/filename.md"),
+            1,
+            str!("test")
+        )],
+        "...r/or/evenlonger/filename.md | 1    | test"
+    );
+
+    test_format!(
+        format_line_number_four_digits,
+        vec![(
+            str!("/temp/long/and/longer/or/evenlonger/filename.md"),
+            9999,
+            str!("test"),
+        )],
+        "...r/or/evenlonger/filename.md | 9999 | test"
+    );
+
+    test_format!(
+        format_line_number_five_digits,
+        vec![(
+            str!("/temp/long/and/longer/or/evenlonger/filename.md"),
+            99999,
+            str!("test"),
+        )],
+        "...r/or/evenlonger/filename.md | 99999 | test"
+    );
+
+    test_format!(
+        format_long_line,
+        vec![(
+            str!("/temp/long/and/longer/or/evenlonger/filename.md"),
+            9999,
+            str!("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.")
+        )],
+        "...r/or/evenlonger/filename.md | 9999 | Lorem Ipsum is simply dummy text of the pr...");
+}
+
+#[cfg(test)]
+mod notefile_tests {
+
+    mod search_tests{
+        use crate::noted::NoteFile;
 
         #[test]
-        #[serial_test::serial]
-        fn empty_argument_returns_fallback() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let now = chrono::Local::now();
-                let file_name = format!("{}.md", &now.format("%Y"));
-                std::fs::File::create(&file_name).unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Year,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let test_args = vec_of_strings!("callstack");
-                // ACT
-                if let Some(target) =
-                    Markdown::taget_by_pattern(test_args[1..].to_vec(), &configuration)
-                {
-                    // ASSERT
-                    assert_eq!(
-                        format!("{}/{}", str!(cur_dir, PathBuf), file_name),
-                        str!(target, PathBuf)
-                    );
-                } else {
-                    panic!("no file found!");
+        fn invalid_pattern(){
+            match NoteFile::target_by_pattern("[", &std::env::current_dir().unwrap()){
+                Ok(_) => panic!("should not be ok"),
+                Err(err) => {
+                    assert_eq!(std::io::ErrorKind::Other, err.kind());
+                },
+            }
+        }
+    }
+
+    mod from_tests {
+        use crate::noted::{FileRolling, NoteFile};
+
+        macro_rules! test_conversion {
+            ($name:ident, $($s:expr, $o:expr),+) => {
+                #[test]
+                fn $name() {
+                    let now = chrono::Local::now();
+                    $({
+                        let file_name = format!("{}.md", &now.format($o));
+                        let res = NoteFile::from(&$s);
+                        assert_eq!(
+                        file_name,
+                        res.file
+                    )})*
                 }
-            });
+            };
         }
 
-        #[test]
-        #[serial_test::serial]
-        fn no_matching_file_is_found_returns_none() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let now = chrono::Local::now();
-                let file_name = format!("{}.md", &now.format("%Y"));
-                std::fs::File::create(&file_name).unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Year,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                // ACT
-                let target = Markdown::taget_by_pattern(vec_of_strings!("04"), &configuration);
-                assert!(target.is_none());
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn find_by_filename() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let now = chrono::Local::now();
-                let cur_year = &now.format("%Y");
-                let file_name = format!("{}.md", &now.format("%Y"));
-                std::fs::File::create(&file_name).unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Year,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                // ACT
-                if let Some(target) =
-                    Markdown::taget_by_pattern(vec_of_strings!(cur_year), &configuration)
-                {
-                    // ASSERT
-                    assert_eq!(
-                        format!("{}/{}", str!(cur_dir, PathBuf), file_name),
-                        str!(target, PathBuf)
-                    );
-                } else {
-                    panic!("no file found!");
-                }
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn find_by_filename_wildcard_single_file() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let now = chrono::Local::now();
-                let file_name = format!("{}.md", &now.format("%Y"));
-                std::fs::File::create(&file_name).unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Year,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let pattern = format!("*{}", &now.format("%y"));
-                // ACT
-                if let Some(target) =
-                    Markdown::taget_by_pattern(vec_of_strings!(pattern), &configuration)
-                {
-                    // ASSERT
-                    assert_eq!(
-                        format!("{}/{}", str!(cur_dir, PathBuf), file_name),
-                        str!(target, PathBuf)
-                    );
-                } else {
-                    panic!("no file found!");
-                }
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn find_by_filename_wildcard_no_char_before_ext() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                std::fs::File::create("2021-02.md").unwrap();
-                std::fs::File::create("2021-04.md").unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                // ACT
-                if let Some(target) =
-                    Markdown::taget_by_pattern(vec_of_strings!("2021-04*"), &configuration)
-                {
-                    // ASSERT
-                    assert_eq!(
-                        format!("{}/{}", str!(cur_dir, PathBuf), "2021-04.md"),
-                        str!(target, PathBuf)
-                    );
-                } else {
-                    panic!("no file found!");
-                }
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn find_by_filename_wildcard_multiple_files_rolling_mix() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                std::fs::File::create("2021-02.md").unwrap();
-                std::fs::File::create("2021-04-02.md").unwrap();
-                std::fs::File::create("2021-04-03.md").unwrap();
-                std::fs::File::create("2021-04.md").unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                // ACT
-                if let Some(target) =
-                    Markdown::taget_by_pattern(vec_of_strings!("2021-04*"), &configuration)
-                {
-                    // ASSERT
-                    assert_eq!(
-                        format!("{}/{}", str!(cur_dir, PathBuf), "2021-04-02.md"),
-                        str!(target, PathBuf)
-                    );
-                } else {
-                    panic!("no file found!");
-                }
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn find_by_filename_wildcard_multiple_files_sorting() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                std::fs::File::create("2021-02.md").unwrap();
-                std::fs::File::create("2021-04-02.md").unwrap();
-                std::fs::File::create("2021-04-03.md").unwrap();
-                std::fs::File::create("2021-01.md").unwrap();
-                let configuration = Configuration {
-                    file_rolling: crate::noted::FileRolling::Daily,
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                // ACT
-                if let Some(target) =
-                    Markdown::taget_by_pattern(vec_of_strings!("2021*"), &configuration)
-                {
-                    // ASSERT
-                    assert_eq!(
-                        format!("{}/{}", str!(cur_dir, PathBuf), "2021-01.md"),
-                        str!(target, PathBuf)
-                    );
-                } else {
-                    panic!("no file found!");
-                }
-            });
-        }
+        test_conversion!(daily, FileRolling::Daily, "%Y-%m-%d");
+        test_conversion!(month, FileRolling::Month, "%Y-%m");
+        test_conversion!(week, FileRolling::Week, "%Y-%W");
+        test_conversion!(year, FileRolling::Year, "%Y");
+        test_conversion!(never, FileRolling::Never, "notes");
     }
 
     mod target_tests {
-        use crate::noted::{Configuration, Markdown};
+        use crate::noted::{Configuration, NoteFile};
         use crate::str;
 
         #[test]
@@ -1136,138 +339,595 @@ mod markdown_tests {
             let now = chrono::Local::now();
             let file_name = format!("{}.md", &now.format("%Y-%m"));
             // ACT
-            let target = Markdown::target(&configuration);
+            let target = NoteFile::target(&configuration);
             // ASSERT
             assert!(str!(target, PathBuf).starts_with("/home"));
             assert!(str!(target, PathBuf).ends_with(&file_name));
         }
 
         #[test]
-        #[serial_test::serial]
-        fn repository_specific_no_repository() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    use_repository_specific: true,
-                    ..Default::default()
-                };
-                let target = Markdown::target(&configuration);
-                assert_ne!(
-                    format!("{}/notes.md", cur_dir.to_str().unwrap()),
-                    str!(target, PathBuf)
-                );
-                assert!(str!(target, PathBuf).starts_with("/home"));
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn repository_specific_at_root() {
-            in_temp_dir!({
-                let cur_dir = std::env::current_dir().unwrap();
-                git2::Repository::init(&cur_dir).unwrap();
-
-                // dbg!(&cur_dir);
-                let configuration = Configuration {
-                    use_repository_specific: true,
-                    ..Default::default()
-                };
-                let target = Markdown::target(&configuration);
-                assert_eq!(
-                    format!("{}/notes.md", cur_dir.to_str().unwrap()),
-                    str!(target, PathBuf)
-                );
-            });
-        }
-
-        #[test]
-        #[serial_test::serial]
-        fn repository_specific_at_subfolder() {
-            in_temp_dir!({
-                let current_dir = std::env::current_dir().unwrap();
-                git2::Repository::init(&current_dir).unwrap();
-                let sub_dir = current_dir.join("src").join("module");
-                std::fs::create_dir_all(&sub_dir).unwrap();
-                std::env::set_current_dir(&sub_dir).unwrap();
-                let cur_sub_dir = std::env::current_dir().unwrap();
-
-                // dbg!(&cur_sub_dir);
-                assert_eq!(sub_dir, cur_sub_dir);
-
-                let configuration = Configuration {
-                    use_repository_specific: true,
-                    ..Default::default()
-                };
-                let target = Markdown::target(&configuration);
-                assert_eq!(
-                    format!("{}/notes.md", current_dir.to_str().unwrap()),
-                    str!(target, PathBuf)
-                );
-            });
+        fn invalid_pattern_bubble_up(){
+            match NoteFile::target_by_pattern("[", &std::env::current_dir().unwrap()){
+                Ok(_) => panic!("should not be ok"),
+                Err(err) => {
+                    assert_eq!(std::io::ErrorKind::Other, err.kind());
+                },
+            }
         }
     }
 
     mod custom_target_tests {
-        use crate::{
-            noted::{Configuration, FileRolling, Markdown, NOTES_FILE_NAME},
-            str,
+        use crate::noted::{Configuration, FileRolling, NoteFile, NOTES_FILE_NAME};
+
+        macro_rules! test_custom_target {
+            ($name:ident, $($a:expr, $e:expr),+) => {
+                #[test]
+                fn $name() {
+                    $({
+                        let configuration = Configuration{
+                            file_rolling: FileRolling::Never,
+                            ..Default::default()
+                        };
+                        let target = NoteFile::custom_target($a, &configuration);
+                        assert_eq!(std::path::PathBuf::from(configuration.note_directory).join($e), target);
+                    })*
+                }
+            };
+        }
+
+        test_custom_target!(file_with_md_extension, "test.md", "test.md");
+        test_custom_target!(file_without_md_extension, "test", "test.md");
+        test_custom_target!(file_with_other_extension, "test.ini", "test.ini.md");
+        test_custom_target!(file_without_name_returns_from_config, "", NOTES_FILE_NAME);
+
+        #[test]
+        fn custom_target_repository_specific_returns_note_directory() {
+            let configuration = Configuration {
+                use_repository_specific: true,
+                file_rolling: FileRolling::Never,
+                ..Default::default()
+            };
+            let target = NoteFile::custom_target("sample_not_inside_repo", &configuration);
+            assert_eq!(std::path::PathBuf::from(configuration.note_directory).join("sample_not_inside_repo.md"), target);
+        }
+    }
+}
+
+#[cfg(test)]
+mod cli_tests {
+
+    macro_rules! test_command {
+        ($name:ident, $($s:expr, $o:expr),+) => {
+            #[test]
+            fn $name() {
+                $({
+                    let res = Cli::parse($s.iter()).unwrap();
+                    assert_eq!(
+                    $o,
+                    res.command
+                )})*
+            }
         };
+    }
+
+    mod help_tests {
+        use indoc::indoc;
+
+        use crate::noted::Cli;
 
         #[test]
-        fn file_with_md_extension() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let target = Markdown::custom_target(&[str!("test.md")], &configuration);
-                assert_eq!(cur_dir.join("test.md"), target);
-            });
+        fn no_args_prints_help() {
+            let err = Cli::parse(["noted"].iter()).unwrap_err();
+            let expected = indoc!(
+                "Take notes using CLI
+
+                USAGE:
+                    noted [FLAGS] <note> [tag]...
+                    noted <SUBCOMMAND>
+
+                FLAGS:
+                    -o               Open note file in default editor after writing
+                    -d               Set the level of verbosity
+                    -h, --help       Prints help information
+                    -v, --version    Prints version information
+
+                ARGS:
+                    <note>      Note to take
+                    <tag>...    Tags for note
+
+                SUBCOMMANDS:
+                    create    Create note file and open in default editor
+                    open      Opens note file in default editor
+                    search    Search for a specific string in notes
+                    config    Open configuration in default editor
+                    help      Prints this message or the help of the given subcommand(s)"
+            );
+            assert!(
+                err.message.contains(expected),
+                "Expected: {:?}, Got: {:?}",
+                expected,
+                err.message
+            );
         }
 
         #[test]
-        fn file_without_md_extension() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let target = Markdown::custom_target(&[str!("test")], &configuration);
-                assert_eq!(cur_dir.join("test.md"), target);
-            });
+        fn arg_help() {
+            let err = Cli::parse(["noted", "help"].iter()).unwrap_err();
+            let expected = indoc!(
+                "Take notes using CLI
+
+                USAGE:
+                    noted [FLAGS] <note> [tag]...
+                    noted <SUBCOMMAND>
+
+                FLAGS:
+                    -o               Open note file in default editor after writing
+                    -d               Set the level of verbosity
+                    -h, --help       Prints help information
+                    -v, --version    Prints version information
+
+                ARGS:
+                    <note>      Note to take
+                    <tag>...    Tags for note
+
+                SUBCOMMANDS:
+                    create    Create note file and open in default editor
+                    open      Opens note file in default editor
+                    search    Search for a specific string in notes
+                    config    Open configuration in default editor
+                    help      Prints this message or the help of the given subcommand(s)"
+            );
+            assert!(err.message.contains(expected));
         }
 
         #[test]
-        fn file_with_other_extension() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    note_directory: str!(cur_dir, PathBuf),
-                    ..Default::default()
-                };
-                let target = Markdown::custom_target(&[str!("test.ini")], &configuration);
-                assert_eq!(cur_dir.join("test.ini.md"), target);
-            });
+        fn arg_help_create() {
+            let err = Cli::parse(["noted", "help", "create"].iter()).unwrap_err();
+            let expected = indoc!(
+                "Creates a new note file in the configured note directory and opens it in default editor.
+
+                USAGE:
+                    noted create [FLAGS] <filename>
+
+                FLAGS:
+                    -d            Set the level of verbosity
+                    -h, --help    Prints help information
+
+                ARGS:
+                    <filename>    File name for created note file"
+            );
+            assert!(err.message.contains(expected));
         }
 
         #[test]
-        fn file_without_name_returns_from_config() {
-            in_temp_dir!({
-                // ARAMGE
-                let cur_dir = std::env::current_dir().unwrap();
-                let configuration = Configuration {
-                    note_directory: str!(cur_dir, PathBuf),
-                    file_rolling: FileRolling::Never,
-                    ..Default::default()
-                };
-                let target = Markdown::custom_target(&[], &configuration);
-                assert_eq!(cur_dir.join(NOTES_FILE_NAME), target);
-            });
+        fn arg_help_open() {
+            let err = Cli::parse(["noted", "help", "open"].iter()).unwrap_err();
+            let expected = indoc!(
+                "Open the current note file in the default editor.
+
+                Depending on the configuration the current note file may also be repository specific.
+                If filename is provided, a note file matching the pattern will be searched in the configured note directory.
+
+                USAGE:
+                    noted open [FLAGS] [filename]
+
+                FLAGS:
+                    -d            Set the level of verbosity
+                    -h, --help    Prints help information
+
+                ARGS:
+                    <filename>    Provide filename for note to open"
+            );
+            assert!(err.message.contains(expected));
         }
+
+        #[test]
+        fn arg_help_search() {
+            let err = Cli::parse(["noted", "help", "search"].iter()).unwrap_err();
+            let expected = indoc!(
+                "Search for a specific string in notes using the provided RegEx pattern.
+
+                USAGE:
+                    noted search [FLAGS] <pattern> [file filter]
+
+                FLAGS:
+                    -d            Set the level of verbosity
+                    -h, --help    Prints help information
+                    -t, --tag     Search only for tags
+
+                ARGS:
+                    <pattern>        Search pattern
+                    <file filter>    File filter pattern"
+            );
+            assert!(err.message.contains(expected));
+        }
+
+        #[test]
+        fn arg_help_config() {
+            let err = Cli::parse(["noted", "help", "config"].iter()).unwrap_err();
+            let expected = indoc!(
+                "Open configuration in default editor
+
+                USAGE:
+                    noted config [FLAGS]
+
+                FLAGS:
+                    -d            Set the level of verbosity
+                    -h, --help    Prints help information"
+            );
+            assert!(err.message.contains(expected));
+        }
+
+        #[test]
+        fn arg_help_short_flag() {
+            let err = Cli::parse(["noted", "create", "-h"].iter()).unwrap_err();
+            assert!(err.message.contains("Creates a new note file in the configured note directory and opens it in default editor."));
+            assert!(err.message.contains("File name for created note file"));
+        }
+
+        #[test]
+        fn arg_help_long_flag() {
+            let err = Cli::parse(["noted", "create", "--help"].iter()).unwrap_err();
+            assert!(err.message.contains("Creates a new note file in the configured note directory and opens it in default editor."));
+            assert!(err.message.contains(
+                "A note file with the provided name is created in the configured note directory."
+            ));
+        }
+    }
+
+    mod verbosity_test {
+        use crate::noted::Cli;
+
+        #[test]
+        fn default() {
+            let res = Cli::parse(["noted", "take some note"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Warn, res.verbosity);
+        }
+
+        #[test]
+        fn info() {
+            let res = Cli::parse(["noted", "-d", "take some note"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Info, res.verbosity);
+        }
+
+        #[test]
+        fn debug() {
+            let res = Cli::parse(["noted", "-dd", "take some note"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Debug, res.verbosity);
+        }
+
+        #[test]
+        fn trace() {
+            let res = Cli::parse(["noted", "-ddd", "file"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Trace, res.verbosity);
+        }
+
+        #[test]
+        fn subcommand_default() {
+            let res = Cli::parse(["noted", "create", "file"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Warn, res.verbosity);
+        }
+
+        #[test]
+        fn subcommand_info() {
+            let res = Cli::parse(["noted", "create", "-d", "file"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Info, res.verbosity);
+        }
+
+        #[test]
+        fn subcommand_debug() {
+            let res = Cli::parse(["noted", "create", "-dd", "file"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Debug, res.verbosity);
+        }
+
+        #[test]
+        fn subcommand_trace() {
+            let res = Cli::parse(["noted", "create", "-ddd", "file"].iter()).unwrap();
+            assert_eq!(log::LevelFilter::Trace, res.verbosity);
+        }
+    }
+
+    mod note_test {
+        use crate::noted::{Cli, Command};
+        use crate::str;
+
+        test_command!(
+            take_note,
+            ["noted", "take some note"],
+            Command::Note {
+                open_after_write: false,
+                note: str!("take some note"),
+                tags: Vec::new()
+            }
+        );
+
+        test_command!(
+            take_note_open_short,
+            ["noted", "take some note", "-o"],
+            Command::Note {
+                open_after_write: true,
+                note: str!("take some note"),
+                tags: Vec::new()
+            }
+        );
+
+        test_command!(
+            take_note_with_single_tag,
+            ["noted", "take some note", "Tag1"],
+            Command::Note {
+                open_after_write: false,
+                note: str!("take some note"),
+                tags: [str!("Tag1")].to_vec()
+            }
+        );
+
+        test_command!(
+            take_note_with_multiple_tags,
+            ["noted", "take some note", "Tag1", "Tag2"],
+            Command::Note {
+                open_after_write: false,
+                note: str!("take some note"),
+                tags: [str!("Tag1"), str!("Tag2")].to_vec()
+            }
+        );
+
+        test_command!(
+            take_note_with_multiple_tags_open,
+            ["noted", "take some note", "Tag1", "Tag2", "-o"],
+            Command::Note {
+                open_after_write: true,
+                note: str!("take some note"),
+                tags: [str!("Tag1"), str!("Tag2")].to_vec()
+            }
+        );
+
+        test_command!(
+            take_note_with_multiple_tags_open_mixed,
+            ["noted", "take some note", "Tag1", "-o", "Tag2", "Tag3"],
+            Command::Note {
+                open_after_write: true,
+                note: str!("take some note"),
+                tags: [str!("Tag1"), str!("Tag2"), str!("Tag3")].to_vec()
+            }
+        );
+    }
+
+    mod create_args_test {
+        use crate::noted::{Cli, Command};
+        use crate::str;
+
+        #[test]
+        fn no_args_prints_help_about_required_arguments() {
+            let err = Cli::parse(["noted", "create"].iter()).unwrap_err();
+            assert!(err
+                .message
+                .contains("The following required arguments were not provided"));
+            assert!(err.message.contains("filename"));
+        }
+
+        test_command!(
+            create_with_filename,
+            ["noted", "create", "test"],
+            Command::Create {
+                filename: str!("test")
+            }
+        );
+
+        test_command!(
+            alias_c,
+            ["noted", "c", "test"],
+            Command::Create {
+                filename: str!("test")
+            }
+        );
+
+        test_command!(
+            alias_new,
+            ["noted", "new", "test"],
+            Command::Create {
+                filename: str!("test")
+            }
+        );
+
+        test_command!(
+            alias_n,
+            ["noted", "n", "test"],
+            Command::Create {
+                filename: str!("test")
+            }
+        );
+    }
+
+    mod open_args_test {
+        use crate::noted::{Cli, Command};
+        use crate::str;
+
+        test_command!(
+            open_without_filename,
+            ["noted", "open"],
+            Command::Open { filename: None }
+        );
+
+        test_command!(
+            open_with_filename,
+            ["noted", "open", "file"],
+            Command::Open {
+                filename: Some(str!("file"))
+            }
+        );
+
+        test_command!(alias_o, ["noted", "open"], Command::Open { filename: None });
+
+        test_command!(
+            alias_edit,
+            ["noted", "edit"],
+            Command::Open { filename: None }
+        );
+
+        test_command!(alias_e, ["noted", "e"], Command::Open { filename: None });
+
+        test_command!(
+            alias_view,
+            ["noted", "view"],
+            Command::Open { filename: None }
+        );
+    }
+
+    mod search_args_test {
+        use crate::noted::{Cli, Command};
+        use crate::str;
+
+        #[test]
+        fn no_args_prints_help_about_required_arguments() {
+            let err = Cli::parse(["noted", "search"].iter()).unwrap_err();
+            assert!(err
+                .message
+                .contains("The following required arguments were not provided"));
+            assert!(err.message.contains("pattern"));
+        }
+
+        test_command!(
+            search_pattern,
+            ["noted", "search", "xyz*"],
+            Command::Search {
+                tag: false,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            search_pattern_tag,
+            ["noted", "search", "--tag", "xyz*"],
+            Command::Search {
+                tag: true,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            search_pattern_tag_filepattern,
+            ["noted", "search", "--tag", "xyz*", "*samplefile*"],
+            Command::Search {
+                tag: true,
+                pattern: str!("xyz*"),
+                file_pattern: Some(str!("*samplefile*")),
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            search_pattern_tag_short,
+            ["noted", "search", "-t", "xyz*"],
+            Command::Search {
+                tag: true,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            alias_s,
+            ["noted", "s", "-t", "xyz*"],
+            Command::Search {
+                tag: true,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            alias_grep,
+            ["noted", "grep", "xyz*"],
+            Command::Search {
+                tag: false,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            alias_find,
+            ["noted", "find", "xyz*"],
+            Command::Search {
+                tag: false,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+
+        test_command!(
+            alias_f,
+            ["noted", "f", "xyz*"],
+            Command::Search {
+                tag: false,
+                pattern: str!("xyz*"),
+                file_pattern: None,
+                output_to_file: false
+            }
+        );
+    }
+
+    mod config_test{
+        use crate::noted::{Cli, Command};
+
+        test_command!(
+            config,
+            ["noted", "config"],
+            Command::Config
+        );
+    }
+
+    mod undefined_test{
+    // Known Limitaion: Currently it is not possible (at least I didn't find anythin suitable) to disable InferSubcommands in clap.
+    // Therefore this bug will persist.
+    //     use crate::noted::{Cli, Command};
+
+    //     test_command!(
+    //         command_create_like_defaults_to_note,
+    //         ["noted", "creat undefined"],
+    //         Command::Note {
+    //             open_after_write: false,
+    //             note: "creat undefined".to_string(),
+    //             tags: Vec::new()
+    //         }
+    //     );
+
+    //     test_command!(
+    //         command_open_like_defaults_to_note,
+    //         ["noted", "ope undefined"],
+    //         Command::Note {
+    //             open_after_write: false,
+    //             note: "ope undefined".to_string(),
+    //             tags: Vec::new()
+    //         }
+    //     );
+
+    //     test_command!(
+    //         command_search_like_defaults_to_note,
+    //         ["noted", "searc undefined"],
+    //         Command::Note {
+    //             open_after_write: false,
+    //             note: "searc undefined".to_string(),
+    //             tags: Vec::new()
+    //         }
+    //     );
+
+    //     test_command!(
+    //         command_config_like_defaults_to_note,
+    //         ["noted", "conf undefined"],
+    //         Command::Note {
+    //             open_after_write: false,
+    //             note: "conf undefined".to_string(),
+    //             tags: Vec::new()
+    //         }
+    //     );
     }
 }
