@@ -6,11 +6,11 @@
         {
             "label": "Coverage",
             "type": "shell",
-            "command": "cargo",
-            "args": [
-                "tarpaulin",
-                "--out 'Lcov'"
-            ],
+            "command": "./eng/build.sh -test -coverage -lcov",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "problemMatcher": [
                 "$rustc"
             ]
@@ -18,13 +18,11 @@
         {
             "label": "Coverage (HTML)",
             "type": "shell",
-            "command": "cargo",
-            "args": [
-                "tarpaulin",
-                "--out",
-                "Html",
-                "--ignore-tests"
-            ],
+            "command": "./eng/build.sh -test -coverage",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "problemMatcher": [
                 "$rustc"
             ]
@@ -32,20 +30,51 @@
         {
             "label": "Build",
             "type": "shell",
-            "command": "cargo build",
+            "command": "./eng/build.sh -build",
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+            "problemMatcher": [
+                "$rustc"
+            ]
         },
         {
+            "label": "Rebuild",
             "type": "shell",
-            "command": "cargo test",
+            "command": "./eng/build.sh -rebuild",
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Test",
+            "type": "shell",
+            "command": "./eng/build.sh -test",
             "problemMatcher": [
                 "$rustc"
             ],
-            "group": "test",
-            "label": "Test"
+            "group": {
+                "kind": "test",
+                "isDefault": true,
+            }
+        },
+        {
+            "label": "Publish (Windows)",
+            "type": "shell",
+            "command": "./eng/build.sh -build -publish -windows",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Publish (Linux)",
+            "type": "shell",
+            "command": "./eng/build.sh -build -publish -linux",
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
