@@ -1,14 +1,10 @@
 use noted::cli::Cli;
-use std::{env::{self, ArgsOs}, io};
+use std::{env, io};
 
 #[cfg(not(tarpaulin_include))]
 fn main() -> Result<(), io::Error> {
-    invoke(env::args_os())
-}
+    let cli = Cli::parse(env::args_os()).unwrap_or_else(|e| e.exit());
 
-fn invoke(args: ArgsOs) -> Result<(), io::Error>
-{
-    let cli = Cli::parse(args).unwrap_or_else(|e| e.exit());
     simple_logger::SimpleLogger::new()
         .with_level(cli.verbosity)
         .init()

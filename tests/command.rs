@@ -1,9 +1,9 @@
-use std::{path, io, fs, env};
+use std::{env, fs, io, path};
 
 use indoc::indoc;
 use noted::{
-    command::Command, configuration::Configuration, file_rolling::FileRolling,
-    note_template::NoteTemplate, str, vec_of_strings, NOTES_FILE_NAME, assert_file_exists, safe_file_create,
+    assert_file_exists, command::Command, configuration::Configuration, file_rolling::FileRolling,
+    note_template::NoteTemplate, safe_file_create, str, vec_of_strings, NOTES_FILE_NAME,
 };
 
 struct CommandContext {
@@ -43,7 +43,7 @@ impl test_context::TestContext for CommandContext {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn take_note(ctx: &mut CommandContext) {
+fn when_command_take_note_is_invoked_then_a_note_is_taken(ctx: &mut CommandContext) {
     // ARANGE
     let command = Command::Note {
         open_after_write: false,
@@ -60,10 +60,9 @@ fn take_note(ctx: &mut CommandContext) {
             let expected_note_content = vec_of_strings!("Sample Note", "", "---");
 
             let read_note_file = fs::File::open(expected_file).unwrap();
-            let raw_note: Vec<String> =
-                io::BufRead::lines(io::BufReader::new(read_note_file))
-                    .map(|l| l.unwrap())
-                    .collect();
+            let raw_note: Vec<String> = io::BufRead::lines(io::BufReader::new(read_note_file))
+                .map(|l| l.unwrap())
+                .collect();
 
             for i in 0..raw_note.len() - 1 {
                 assert_eq!(expected_note_content[i], raw_note[i]);
@@ -76,7 +75,9 @@ fn take_note(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn take_note_with_tags(ctx: &mut CommandContext) {
+fn when_command_take_note_with_tags_is_invoked_then_a_note_with_tags_is_taken(
+    ctx: &mut CommandContext,
+) {
     // ARANGE
     let command = Command::Note {
         open_after_write: false,
@@ -94,10 +95,9 @@ fn take_note_with_tags(ctx: &mut CommandContext) {
                 vec_of_strings!("Sample Note", "", "#sample;#test", "", "---");
 
             let read_note_file = fs::File::open(expected_file).unwrap();
-            let raw_note: Vec<String> =
-                io::BufRead::lines(io::BufReader::new(read_note_file))
-                    .map(|l| l.unwrap())
-                    .collect();
+            let raw_note: Vec<String> = io::BufRead::lines(io::BufReader::new(read_note_file))
+                .map(|l| l.unwrap())
+                .collect();
 
             for i in 0..raw_note.len() - 1 {
                 assert_eq!(expected_note_content[i], raw_note[i]);
@@ -110,7 +110,9 @@ fn take_note_with_tags(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn take_note_and_open(ctx: &mut CommandContext) {
+fn when_comamnd_take_note_and_open_is_invoked_then_a_note_is_taken_and_opened_in_default_editor(
+    ctx: &mut CommandContext,
+) {
     // ARANGE
     let command = Command::Note {
         open_after_write: true,
@@ -133,7 +135,9 @@ fn take_note_and_open(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn create_note_command(ctx: &mut CommandContext) {
+fn when_command_create_note_is_invoked_then_a_note_file_is_created_with_given_name(
+    ctx: &mut CommandContext,
+) {
     // ARANGE
     let filename = "my-custom-file".to_string();
     let command = Command::Create {
@@ -155,7 +159,9 @@ fn create_note_command(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn open_note_command(ctx: &mut CommandContext) {
+fn when_command_open_note_is_invoked_then_the_current_note_file_is_opened(
+    ctx: &mut CommandContext,
+) {
     // ARANGE
     // Create a note
     Command::Note {
@@ -182,7 +188,9 @@ fn open_note_command(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn open_note_command_custom_file(ctx: &mut CommandContext) {
+fn when_commdn_open_note_with_custom_file_name_is_invoked_then_that_note_file_is_opened(
+    ctx: &mut CommandContext,
+) {
     // ARANGE
     let filename = "my-custom-file".to_string();
     safe_file_create!(&filename);
@@ -205,7 +213,7 @@ fn open_note_command_custom_file(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn config_command(ctx: &mut CommandContext) {
+fn when_command_config_is_invoked_then_config_file_is_opened(ctx: &mut CommandContext) {
     // ARANGE
     let command = Command::Config;
     // ACT
@@ -224,7 +232,7 @@ fn config_command(ctx: &mut CommandContext) {
 #[test_context::test_context(CommandContext)]
 #[test]
 #[serial_test::serial]
-fn search_command(ctx: &mut CommandContext) {
+fn when_command_search_is_invoked_then_search_is_executed(ctx: &mut CommandContext) {
     // ARANGE
     // Create a note
     Command::Note {

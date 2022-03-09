@@ -135,3 +135,38 @@ impl Markdown {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{SearchArguments, configuration::Configuration};
+
+    use super::Markdown;
+
+    #[test]
+    fn when_empty_search_arguments_are_given_then_invalidinput_error_is_raised() {
+        let search = SearchArguments::default();
+        let configuration = Configuration::default();
+        match Markdown::search(search, &configuration) {
+            Ok(_) => panic!("should not be ok"),
+            Err(err) => {
+                assert_eq!(std::io::ErrorKind::InvalidInput, err.kind());
+            }
+        }
+    }
+
+    #[test]
+    fn when_files_by_pattern_are_not_found_then_an_error_is_raised() {
+        let search = SearchArguments {
+            regex: "For Unit Test Only Will Not Be Found".to_string(),
+            file_regex: Some("__\\".to_string()),
+            ..Default::default()
+        }; //::from(vec_of_strings!("bug", "_\\"));
+        let configuration = Configuration::default();
+        match Markdown::search(search, &configuration) {
+            Ok(_) => panic!("should not be ok"),
+            Err(err) => {
+                assert_eq!(std::io::ErrorKind::NotFound, err.kind());
+            }
+        }
+    }
+}

@@ -66,6 +66,7 @@ impl test_context::TestContext for End2EndContext {
 #[test_context::test_context(End2EndContext)]
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "e2e"), ignore)]
 fn when_note_with_tags_is_taken_then_a_note_file_is_created(ctx: &mut End2EndContext) {
     let now = chrono::Local::now();
     let timestamp = format!("{}", &now.format("%Y%m"));
@@ -96,6 +97,7 @@ fn when_note_with_tags_is_taken_then_a_note_file_is_created(ctx: &mut End2EndCon
 #[test_context::test_context(End2EndContext)]
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "e2e"), ignore)]
 fn when_search_for_note_then_files_in_note_folder_are_searched(ctx: &mut End2EndContext) {
     let expected = format!(
         indoc!(
@@ -128,6 +130,7 @@ fn when_search_for_note_then_files_in_note_folder_are_searched(ctx: &mut End2End
 #[test_context::test_context(End2EndContext)]
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "e2e"), ignore)]
 fn when_search_for_note_in_multiple_files_then_files_in_note_folder_are_searched(
     ctx: &mut End2EndContext,
 ) {
@@ -191,6 +194,7 @@ fn when_search_for_note_in_multiple_files_then_files_in_note_folder_are_searched
 #[test_context::test_context(End2EndContext)]
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "e2e"), ignore)]
 fn when_search_for_tag_wildcard_in_multiple_files_then_files_in_note_folder_are_searched(
     ctx: &mut End2EndContext,
 ) {

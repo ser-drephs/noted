@@ -1,37 +1,9 @@
 use indoc::indoc;
 use noted::{
-    configuration::Configuration, file_rolling::FileRolling, markdown::Markdown, note::Note,
-    note_file::NoteFile, note_template::NoteTemplate, str, vec_of_strings, SearchArguments,
-    NOTES_FILE_NAME, assert_file_exists,
+    assert_file_exists, configuration::Configuration, file_rolling::FileRolling,
+    markdown::Markdown, note::Note, note_file::NoteFile, note_template::NoteTemplate, str,
+    vec_of_strings, SearchArguments, NOTES_FILE_NAME,
 };
-
-#[test]
-fn empty_search_arguments_invalidinput_error() {
-    let search = SearchArguments::default();
-    let configuration = Configuration::default();
-    match Markdown::search(search, &configuration) {
-        Ok(_) => panic!("should not be ok"),
-        Err(err) => {
-            assert_eq!(std::io::ErrorKind::InvalidInput, err.kind());
-        }
-    }
-}
-
-#[test]
-fn files_by_pattern_not_found_error() {
-    let search = SearchArguments {
-        regex: "For Unit Test Only Will Not Be Found".to_string(),
-        file_regex: Some("__\\".to_string()),
-        ..Default::default()
-    }; //::from(vec_of_strings!("bug", "_\\"));
-    let configuration = Configuration::default();
-    match Markdown::search(search, &configuration) {
-        Ok(_) => panic!("should not be ok"),
-        Err(err) => {
-            assert_eq!(std::io::ErrorKind::NotFound, err.kind());
-        }
-    }
-}
 
 struct SearchContext {
     temp_dir: tempfile::TempDir,
@@ -52,7 +24,9 @@ impl test_context::TestContext for SearchContext {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_yields_single_result_in_one_file(ctx: &mut SearchContext) {
+fn when_search_yields_single_result_in_one_file_then_one_entry_is_returned(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
     let configuration = Configuration {
@@ -88,7 +62,9 @@ fn search_yields_single_result_in_one_file(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_yields_multiple_results_in_one_file(ctx: &mut SearchContext) {
+fn when_search_yields_multiple_results_in_one_file_then_multiple_entries_are_returned(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
     let configuration = Configuration {
@@ -136,7 +112,9 @@ fn search_yields_multiple_results_in_one_file(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_yields_single_result_in_multiple_files(ctx: &mut SearchContext) {
+fn when_search_yields_single_result_in_multiple_files_then_multiple_entries_are_returned(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
 
@@ -189,7 +167,9 @@ fn search_yields_single_result_in_multiple_files(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_yields_multiple_results_in_multiple_files(ctx: &mut SearchContext) {
+fn when_search_yields_multiple_results_in_multiple_files_then_multiple_entries_are_returned(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
 
@@ -264,7 +244,9 @@ fn search_yields_multiple_results_in_multiple_files(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_for_tags(ctx: &mut SearchContext) {
+fn when_search_for_tags_yields_multiple_results_in_multiple_files_then_multiple_entries_are_returned(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
     let mut configuration = Configuration {
@@ -317,7 +299,9 @@ fn search_for_tags(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_finds_multiple_occurence_in_filtered_files(ctx: &mut SearchContext) {
+fn when_search_finds_multiple_occurence_in_filtered_files_then_multiple_entries_are_returned(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
 
@@ -375,7 +359,7 @@ fn search_finds_multiple_occurence_in_filtered_files(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_yields_no_results(ctx: &mut SearchContext) {
+fn when_search_yields_no_results_then_error_is_raised(ctx: &mut SearchContext) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
     let configuration = Configuration {
@@ -404,7 +388,7 @@ fn search_yields_no_results(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_output_focus_on_occurence(ctx: &mut SearchContext) {
+fn when_search_output_yields_long_results_then_table_focus_on_occurences(ctx: &mut SearchContext) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
     let configuration = Configuration {
@@ -441,7 +425,9 @@ fn search_output_focus_on_occurence(ctx: &mut SearchContext) {
 #[test_context::test_context(SearchContext)]
 #[test]
 #[serial_test::serial]
-fn search_output_focus_on_occurence_with_long_line(ctx: &mut SearchContext) {
+fn when_search_output_yields_very_long_results_then_table_focus_on_occurences(
+    ctx: &mut SearchContext,
+) {
     // ARRANGE
     let cur_dir = std::env::current_dir().unwrap();
     let configuration = Configuration {
@@ -493,7 +479,9 @@ impl test_context::TestContext for WriteContext {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn write_with_custom_filename(ctx: &mut WriteContext) {
+fn when_note_is_writen_with_custom_filename_then_note_file_with_custom_name_is_created(
+    ctx: &mut WriteContext,
+) {
     let cur_dir = ctx.temp_dir.path();
     let configuration = Configuration {
         note_directory: str!(cur_dir, PathBuf),
@@ -518,7 +506,7 @@ fn write_with_custom_filename(ctx: &mut WriteContext) {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn write_with_daily_rolling(ctx: &mut WriteContext) {
+fn when_note_is_writen_with_daily_rolling_then_note_is_created(ctx: &mut WriteContext) {
     let cur_dir = ctx.temp_dir.path();
     let configuration = Configuration {
         file_rolling: FileRolling::Daily,
@@ -544,7 +532,7 @@ fn write_with_daily_rolling(ctx: &mut WriteContext) {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn write_with_month_rolling(ctx: &mut WriteContext) {
+fn when_note_is_writen_with_month_rolling_then_note_is_created(ctx: &mut WriteContext) {
     let cur_dir = ctx.temp_dir.path();
     let configuration = Configuration {
         file_rolling: FileRolling::Month,
@@ -570,7 +558,7 @@ fn write_with_month_rolling(ctx: &mut WriteContext) {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn write_with_week_rolling(ctx: &mut WriteContext) {
+fn when_note_is_writen_with_week_rolling_then_note_is_created(ctx: &mut WriteContext) {
     let cur_dir = ctx.temp_dir.path();
     let configuration = Configuration {
         file_rolling: FileRolling::Week,
@@ -598,7 +586,7 @@ fn write_with_week_rolling(ctx: &mut WriteContext) {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn write_with_year_rolling(ctx: &mut WriteContext) {
+fn when_note_is_writen_with_year_rolling_then_note_is_created(ctx: &mut WriteContext) {
     let cur_dir = ctx.temp_dir.path();
     let configuration = Configuration {
         file_rolling: FileRolling::Year,
@@ -626,7 +614,7 @@ fn write_with_year_rolling(ctx: &mut WriteContext) {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn note_strucutre(ctx: &mut WriteContext) {
+fn when_note_is_taken_then_template_is_used(ctx: &mut WriteContext) {
     let cur_dir = ctx.temp_dir.path();
     let note_template = str!(indoc! {
         "%note%
@@ -687,7 +675,7 @@ fn note_strucutre(ctx: &mut WriteContext) {
 #[test_context::test_context(WriteContext)]
 #[test]
 #[serial_test::serial]
-fn write_with_mixed_rolling(ctx: &mut WriteContext) {
+fn when_note_is_writen_with_mixed_rolling_then_note_is_created(ctx: &mut WriteContext) {
     let cur_dir = ctx.temp_dir.path();
     // Write Daily note.
     let mut configuration = Configuration {

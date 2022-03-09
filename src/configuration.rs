@@ -215,3 +215,31 @@ impl From<Vec<String>> for Configuration {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+
+    use crate::{configuration::Configuration, file_rolling::FileRolling};
+
+    #[test]
+    fn when_configuration_default_called_then_default_configuration_is_returned() {
+        let configuration = Configuration::default();
+        assert_eq!(FileRolling::Daily, configuration.file_rolling);
+        assert_eq!(
+            Configuration::intial_note_directory(),
+            configuration.note_directory
+        );
+        assert_eq!("%F %T", configuration.note_template.date_format);
+        assert_eq!(
+            indoc! {"
+            %date_format%
+
+            %note%
+
+            %tags%"},
+            configuration.note_template.template
+        );
+        assert!(!configuration.use_repository_specific);
+    }
+}

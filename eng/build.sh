@@ -31,6 +31,7 @@ build=false
 rebuild=false
 test=false
 coverage=false
+e2e=false
 lcov=false
 release=false
 publish=false
@@ -59,6 +60,9 @@ while [[ $# > 0 ]]; do
       ;;
     -test|-t)
       test=true
+      ;;
+    -e2e)
+      e2e=true
       ;;
     -coverage)
       coverage=true
@@ -114,6 +118,8 @@ elif [[ "$test" == true ]]; then
         else
             args+=(tarpaulin --out 'Html')
         fi
+    elif [[ "$e2e" == true ]]; then
+        args+=(test --test e2e)
     else
         args+=(test)
     fi

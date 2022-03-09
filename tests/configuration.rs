@@ -1,31 +1,10 @@
 use std::{fs, io};
-
-use indoc::indoc;
 use noted::{configuration::Configuration, file_rolling::FileRolling};
 use serial_test::serial;
 
 const CONFIGURATION_FOLDER: &str = "noted";
 const CONFIGURATION_FILE_NAME: &str = "noted.config";
 const CONFIGURATION_TEMPLATE_FILE_NAME: &str = "noted.template";
-
-
-#[test]
-fn when_configuration_default_called_then_default_configuration_is_returned() {
-    let configuration = Configuration::default();
-    assert_eq!(FileRolling::Daily, configuration.file_rolling);
-    assert_eq!(Configuration::intial_note_directory(), configuration.note_directory);
-    assert_eq!("%F %T", configuration.note_template.date_format);
-    assert_eq!(
-        indoc! {"
-            %date_format%
-
-            %note%
-
-            %tags%"},
-        configuration.note_template.template
-    );
-    assert!(!configuration.use_repository_specific);
-}
 
 #[test]
 #[serial]

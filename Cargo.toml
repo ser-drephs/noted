@@ -11,10 +11,6 @@ name = "noted"
 name = "noted"
 path = "src/bin/noted_cli.rs"
 
-[[test]]
-name = "noted_tests"
-path = "tests/noted_cli.rs"
-
 [dependencies]
 indoc = "1.0"
 dirs = "4.0.0"
