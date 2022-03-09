@@ -10,11 +10,11 @@ const CONFIGURATION_TEMPLATE_FILE_NAME: &str = "noted.template";
 #[serial]
 fn when_configuration_is_written_then_configuration_file_is_created_and_can_be_parsed() {
     let expected_config = vec![
-        "NOTE_DIRECTORY=/home/vscode".to_string(),
+        "NOTE_DIRECTORY=/home/".to_string(),
         "USE_REPOSITORY_SPECIFIC=false".to_string(),
         "FILE_ROLLING=Daily".to_string(),
         "DATE_FORMAT=%F %T".to_string(),
-        "NOTE_TEMPLATE=home/vscode/.config/noted/noted.template".to_string(),
+        "NOTE_TEMPLATE=/home/".to_string(),
     ];
     let expected_template = vec![
         "%date_format%".to_string(),
@@ -42,7 +42,7 @@ fn when_configuration_is_written_then_configuration_file_is_created_and_can_be_p
         .collect();
 
     for i in 0..raw_config.len() - 1 {
-        assert_eq!(expected_config[i], raw_config[i], "on line {}", i);
+        assert!(raw_config[i].starts_with(&expected_config[i].to_string()), "on line {}", i);
     }
     let read_template_file = fs::File::open(template_file).unwrap();
     let raw_template: Vec<String> = io::BufRead::lines(io::BufReader::new(read_template_file))
@@ -68,13 +68,10 @@ fn read_default() {
     // act
     let config = Configuration::new();
     // assert
-    assert_eq!("/home/vscode".to_string(), config.note_directory);
+    assert!(config.note_directory.starts_with("/home"));
     assert!(!config.use_repository_specific);
     assert_eq!(FileRolling::Daily, config.file_rolling);
-    assert_eq!(
-        "/home/vscode/.config/noted/noted.template",
-        config.template_file
-    );
+    assert!(config.template_file.contains("noted/noted.template"));
     assert!(config.note_template.template.starts_with("%date_format%"));
     // clean up
     let removed = std::fs::remove_dir_all(Configuration::folder());
