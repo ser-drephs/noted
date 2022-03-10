@@ -1,6 +1,6 @@
 [package]
-name = "noted"
-version = "0.1.0-beta.3"
+name = "rust-noted"
+version = "0.1.0-beta"
 edition = "2018"
 
 [lib]

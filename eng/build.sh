@@ -109,7 +109,7 @@ if [[ "$build" == true || "$rebuild" == true ]]; then
     fi
 
     if [[ "$rebuild" == true ]]; then
-        rm -rf $build_dir
+        cargo clean
     fi
 elif [[ "$test" == true ]]; then
     if [[ "$coverage" == true ]]; then

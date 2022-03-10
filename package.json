@@ -1,4 +1,5 @@
 {
-    "name": "noted.rs",
-    "version": "0.1.0"
+    "name": "@ser-drephs/rust-noted",
+    "version": "0.1.0-beta",
+    "private": true
 }
