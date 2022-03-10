@@ -81,7 +81,7 @@ jobs:
       if: ${{ steps.build-linux-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
       with:
         name: noted-linux_${{ steps.semantic-version.outputs.new_release_version }}
-        path: ${{ github.workspace }}/out/x86_64-unknown-linux-gnu/noted
+        path: ${{ github.workspace }}/out/x86_64-unknown-linux-gnu/release/noted
 
     - name: 🧱 build release windows
       id: build-windows-release
@@ -94,7 +94,7 @@ jobs:
       if: ${{ steps.build-windows-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
       with:
         name: noted-windows_${{ steps.semantic-version.outputs.new_release_version }}
-        path: ${{ github.workspace }}/out/x86_64-pc-windows-gnu/noted.exe
+        path: ${{ github.workspace }}/out/x86_64-pc-windows-gnu/release/noted.exe
     # - name: Chocolatey Action
     #   uses: crazy-max/ghaction-chocolatey@v1.6.0
     #   if: ${{ steps.semantic-version.outputs.new_release_published }} == true
