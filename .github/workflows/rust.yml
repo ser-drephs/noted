@@ -64,6 +64,9 @@ jobs:
     - name: 🖨 print cargo toml
       run: cat ./Cargo.toml
 
+    - name: 🖨 print out content
+      run: ls -laHR ${{ github.workspace }}/out
+
     - name: 🧱 build release linux
       id: build-linux-release
       if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
