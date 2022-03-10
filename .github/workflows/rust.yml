@@ -29,13 +29,13 @@ jobs:
       run: chmod +x ${{ github.workspace }}/eng/bump-version.sh && chmod +x ${{ github.workspace }}/eng/build2.sh
       # with:
       #   fetch-depth: 0
-    - name: ✅ check package
-      run: cargo check --lib
+    # - name: ✅ check package
+    #   run: cargo check --lib
 
-    - name: 🧪 run tests
-      id: test
-      shell: bash
-      run: cargo test
+    # - name: 🧪 run tests
+    #   id: test
+    #   shell: bash
+    #   run: cargo test
 
     - name: 🔱 calculate semantic release
       id: semantic-version
@@ -64,14 +64,14 @@ jobs:
     - name: 🖨 print cargo toml
       run: cat ./Cargo.toml
 
-    - name: 🖨 print out content
-      run: ls -laHR ${{ github.workspace }}/out
-
     - name: 🧱 build release linux
       id: build-linux-release
       if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
       run: cargo build --release --target x86_64-unknown-linux-gnu --target-dir ${{ github.workspace }}/out
       shell: bash
+
+    - name: 🖨 print out content
+      run: ls -laHR ${{ github.workspace }}/out
 
     - name: ☁ upload artefact linux
       uses: actions/upload-artifact@v3
