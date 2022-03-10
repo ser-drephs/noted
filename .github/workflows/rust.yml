@@ -22,8 +22,11 @@ jobs:
     #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
     # - name: add windows target
     #   run: rustup target add x86_64-pc-windows-gnu
-    - name: checkout
+    - name: 🗄 checkout
       uses: actions/checkout@v3
+
+    - name: ☄ install windows target
+      run: rustup target add x86_64-pc-windows-gnu
 
     - name: 🔓 set permissions
       run: chmod +x ${{ github.workspace }}/eng/bump-version.sh && chmod +x ${{ github.workspace }}/eng/build2.sh
