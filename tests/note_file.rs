@@ -38,7 +38,7 @@ fn when_repository_specific_is_and_target_is_no_repository_then_default_to_note_
         format!("{}/notes.md", cur_dir.to_str().unwrap()),
         str!(target, PathBuf)
     );
-    assert!(str!(target, PathBuf).starts_with("/home"));
+    assert!(str!(target, PathBuf).starts_with("/"));
 }
 
 #[test_context::test_context(RepositoryTargetContext)]

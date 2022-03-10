@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./eng/build.sh -Test $@
+./eng/test.sh $@

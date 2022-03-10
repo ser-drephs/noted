@@ -226,7 +226,7 @@ mod tests {
         // ACT
         let target = NoteFile::target(&configuration);
         // ASSERT
-        assert!(str!(target, PathBuf).starts_with("/home"));
+        assert!(str!(target, PathBuf).starts_with("/"));
         assert!(str!(target, PathBuf).ends_with(&file_name));
     }
 

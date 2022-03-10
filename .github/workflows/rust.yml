@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    branches: [ main ]
+    branches: [ dev ]
   pull_request:
     branches: [ main ]
 
@@ -24,33 +24,71 @@ jobs:
     #   run: rustup target add x86_64-pc-windows-gnu
     - name: checkout
       uses: actions/checkout@v3
+
+    - name: 🔓 set permissions
+      run: chmod +x ${{ github.workspace }}/eng/bump-version.sh && chmod +x ${{ github.workspace }}/eng/build2.sh
       # with:
       #   fetch-depth: 0
     - name: ✅ check package
       run: cargo check --lib
-    # - name: 🧱 build
-    #   run: cargo build
+
     - name: 🧪 run tests
+      id: test
+      shell: bash
       run: cargo test
-    - name: Semantic Release
+
+    - name: 🔱 calculate semantic release
       id: semantic-version
       uses: cycjimmy/semantic-release-action@v2
+      if: ${{ steps.test.outcome }} == 'success'
       with:
         semantic_version: 18
-        dry_run: true
+        # dry_run: true
         extra_plugins: |
           @semantic-release/changelog@6
           @semantic-release/git@10
           @semantic-release/github@8
           @semantic-release/commit-analyzer@9
+          @semantic-release/exec@6
           conventional-changelog-conventionalcommits@4
       env:
-        DEBUG: semantic-release:*
+        # DEBUG: semantic-release:*
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    # - name: Do something when a new release published
-    #   run: |
-    #     echo Version: ${{ steps.semantic-version.outputs.new_release_version }}
-    #     echo Changed: ${{ steps.semantic-version.outputs.new_release_published }}
+
+    - name: 🖨 print outputs
+      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
+      run: |
+        echo Version: ${{ steps.semantic-version.outputs.new_release_version }}
+        echo Changed: ${{ steps.semantic-version.outputs.new_release_published }}
+
+    - name: 🖨 print cargo toml
+      run: cat ./Cargo.toml
+
+    - name: 🧱 build release linux
+      id: build-linux-release
+      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
+      run: cargo build --release --target x86_64-unknown-linux-gnu --target-dir ${{ github.workspace }}/out
+      shell: bash
+
+    - name: ☁ upload artefact linux
+      uses: actions/upload-artifact@v3
+      if: ${{ steps.build-linux-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
+      with:
+        name: noted-linux_${{ steps.semantic-version.outputs.new_release_version }}
+        path: ${{ github.workspace }}/out/x86_64-unknown-linux-gnu/noted
+
+    - name: 🧱 build release windows
+      id: build-windows-release
+      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
+      run: cargo build --release --target x86_64-pc-windows-gnu --target-dir ${{ github.workspace }}/out
+      shell: bash
+
+    - name: ☁ upload artefact windows
+      uses: actions/upload-artifact@v3
+      if: ${{ steps.build-windows-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_version }} == true
+      with:
+        name: noted-windows_${{ steps.semantic-version.outputs.new_release_version }}
+        path: ${{ github.workspace }}/out/x86_64-pc-windows-gnu/noted.exe
     # - name: Chocolatey Action
     #   uses: crazy-max/ghaction-chocolatey@v1.6.0
     #   if: ${{ steps.semantic-version.outputs.new_release_published }} == true

@@ -10,11 +10,11 @@ const CONFIGURATION_TEMPLATE_FILE_NAME: &str = "noted.template";
 #[serial]
 fn when_configuration_is_written_then_configuration_file_is_created_and_can_be_parsed() {
     let expected_config = vec![
-        "NOTE_DIRECTORY=/home/".to_string(),
+        "NOTE_DIRECTORY=/".to_string(),
         "USE_REPOSITORY_SPECIFIC=false".to_string(),
         "FILE_ROLLING=Daily".to_string(),
         "DATE_FORMAT=%F %T".to_string(),
-        "NOTE_TEMPLATE=/home/".to_string(),
+        "NOTE_TEMPLATE=/".to_string(),
     ];
     let expected_template = vec![
         "%date_format%".to_string(),
@@ -68,7 +68,7 @@ fn read_default() {
     // act
     let config = Configuration::new();
     // assert
-    assert!(config.note_directory.starts_with("/home"));
+    assert!(config.note_directory.starts_with("/"));
     assert!(!config.use_repository_specific);
     assert_eq!(FileRolling::Daily, config.file_rolling);
     assert!(config.template_file.contains("noted/noted.template"));
