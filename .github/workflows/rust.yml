@@ -60,6 +60,7 @@ jobs:
       run: |
         echo Version: ${{ steps.semantic-version.outputs.new_release_version }}
         echo Changed: ${{ steps.semantic-version.outputs.new_release_published }}
+        echo Channel: ${{ steps.semantic-version.outputs.new_release_channel }}
 
     - name: 🖨 print cargo toml
       run: cat ./Cargo.toml
