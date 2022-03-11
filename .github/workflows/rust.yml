@@ -19,10 +19,6 @@ jobs:
     # - name: install software
     #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y  && source $HOME/.cargo/env && rustup target add x86_64-pc-windows-gnu
 
-    - name: ☄ install windows target
-      id: install-target
-      run: sudo apt-get update && sudo apt-get -y install --no-install-recommends mingw-w64 && rustup target add x86_64-pc-windows-gnu
-
     - name: 🗄 checkout
       if: success()
       uses: actions/checkout@v3
@@ -67,6 +63,11 @@ jobs:
 
     - name: 🖨 print cargo toml
       run: cat ./Cargo.toml
+
+    - name: ☄ install windows target
+      id: install-target
+      if: ${{ steps.semantic-version.outputs.new_release_published == 'true' }}
+      run: sudo apt-get update && sudo apt-get -y install --no-install-recommends mingw-w64 && rustup target add x86_64-pc-windows-gnu
 
     - name: 🧱 build release linux
       id: build-linux-release
