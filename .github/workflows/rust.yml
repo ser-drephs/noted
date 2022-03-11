@@ -21,7 +21,7 @@ jobs:
 
     - name: ☄ install windows target
       id: install-target
-      run: apt-get update && apt-get -y install --no-install-recommends mingw-w64 && rustup target add x86_64-pc-windows-gnu
+      run: sudo apt-get update && sudo apt-get -y install --no-install-recommends mingw-w64 && rustup target add x86_64-pc-windows-gnu
 
     - name: 🗄 checkout
       if: success()
