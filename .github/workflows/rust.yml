@@ -60,7 +60,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 🖨 print outputs
-      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == true
+      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == 'true'
       run: |
         echo Version: ${{ steps.semantic-version.outputs.new_release_version }}
         echo Changed: ${{ steps.semantic-version.outputs.new_release_published }}
@@ -70,32 +70,32 @@ jobs:
 
     - name: 🧱 build release linux
       id: build-linux-release
-      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == true
+      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == 'true'
       run: cargo build --release --target x86_64-unknown-linux-gnu --target-dir ${{ github.workspace }}/out
       shell: bash
 
     - name: ☁ upload artefact linux
       uses: actions/upload-artifact@v3
-      if: ${{ steps.build-linux-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == true
+      if: ${{ steps.build-linux-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == 'true'
       with:
         name: noted-linux_${{ steps.semantic-version.outputs.new_release_version }}
         path: ${{ github.workspace }}/out/x86_64-unknown-linux-gnu/release/noted
 
     - name: 🧱 build release windows
       id: build-windows-release
-      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == true
+      if: ${{ steps.semantic-version.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == 'true'
       run: cargo build --release --target x86_64-pc-windows-gnu --target-dir ${{ github.workspace }}/out
       shell: bash
 
     - name: ☁ upload artefact windows
       uses: actions/upload-artifact@v3
-      if: ${{ steps.build-windows-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == true
+      if: ${{ steps.build-windows-release.outcome }} == 'success' && ${{ steps.semantic-version.outputs.new_release_published }} == 'true'
       with:
         name: noted-windows_${{ steps.semantic-version.outputs.new_release_version }}
         path: ${{ github.workspace }}/out/x86_64-pc-windows-gnu/release/noted.exe
 
     # - name: Chocolatey Action
     #   uses: crazy-max/ghaction-chocolatey@v1.6.0
-    #   if: ${{ steps.semantic-version.outputs.new_release_published }} == true
+    #   if: ${{ steps.semantic-version.outputs.new_release_published }} == 'true'
     #   with:
     #     args: -h
